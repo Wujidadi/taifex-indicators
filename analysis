@@ -1,0 +1,253 @@
+#!/usr/bin/env python3
+
+import pandas as pd
+import numpy as np
+
+def analyze_taifex_data(file_path):
+    # 讀取 TSV 檔案
+    df = pd.read_csv(file_path, sep='\t')
+
+    # 重新命名欄位以符合操作習慣 (Open, High, Low, Close, Volume)
+    df.rename(columns={
+        '日期': 'Date',
+        '開盤': 'Open',
+        '最高': 'High',
+        '最低': 'Low',
+        '收盤': 'Close',
+        '成交量': 'Volume'
+    }, inplace=True)
+
+    # 將日期設為索引並轉換型態
+    df['Date'] = pd.to_datetime(df['Date'])
+    df.set_index('Date', inplace=True)
+
+    # --- 指標計算 (使用原生 Pandas / Numpy，確保 Python 3.14 相容性) ---
+
+    # 1. 移動平均線 (Moving Averages, MA)
+    for length in [5, 10, 20, 60]:
+        df[f'MA{length}'] = df['Close'].rolling(window=length).mean()
+
+    # 2. 布林通道 (Bollinger Bands, BBAND) - 22日，2倍標準差
+    df['BB_Mid'] = df['Close'].rolling(window=22).mean()
+    bb_std = df['Close'].rolling(window=22).std()
+    df['BB_Upper'] = df['BB_Mid'] + (bb_std * 2)
+    df['BB_Lower'] = df['BB_Mid'] - (bb_std * 2)
+
+    # 3. CDP (AH/NH/CDP/NL/AL)
+    # 根據前一交易日的最高、最低、收盤價計算當日盤中參考價
+    p_h = df['High'].shift(1)
+    p_l = df['Low'].shift(1)
+    p_c = df['Close'].shift(1)
+
+    df['CDP'] = (p_h + p_l + 2 * p_c) / 4
+    df['AH'] = df['CDP'] + (p_h - p_l)
+    df['NH'] = 2 * df['CDP'] - p_l
+    df['NL'] = 2 * df['CDP'] - p_h
+    df['AL'] = df['CDP'] - (p_h - p_l)
+
+    # 4. SAR (Parabolic SAR)
+    def calculate_sar(df, af=0.02, max_af=0.2):
+        high = df['High'].values
+        low = df['Low'].values
+        close = df['Close'].values
+        open_val = df['Open'].values
+        sar = np.zeros(len(df))
+
+        if len(df) < 2:
+            return sar
+
+        # 初始趨勢判定：第一天根據收盤與開盤判定初始趨勢
+        if close[0] >= open_val[0]:
+            uptrend = True
+            sar[0] = low[0]
+            ep = high[0]
+        else:
+            uptrend = False
+            sar[0] = high[0]
+            ep = low[0]
+
+        af_val = af
+
+        for i in range(1, len(df)):
+            prev_sar = sar[i-1]
+
+            if uptrend:
+                # 更新極致點 (EP) 優先
+                new_high = False
+                if high[i] > ep:
+                    ep = high[i]
+                    new_high = True
+
+                # 階段 1: 根據更新後的 EP 計算當天 SAR (Welles Wilder 的一個變體)
+                # 有些算法是先計算 SAR 再更新 EP，我們嘗試先確認方向
+                current_sar = prev_sar + af_val * (ep - prev_sar)
+
+                # 階段 2: 限制當天預計 SAR 不能超過前兩日最低
+                current_sar = min(current_sar, low[i-1], low[max(0, i-2)])
+
+                # 階段 3: 檢查反轉 (盤中最低價跌破當天 SAR)
+                if low[i] < current_sar:
+                    uptrend = False
+                    sar[i] = ep # 反轉當日跳至前波段最高點
+                    af_val = af
+                    ep = low[i]
+                else:
+                    sar[i] = current_sar
+                    # 階段 4: 更新 AF (僅在有新高時更新)
+                    if new_high:
+                        af_val = min(af_val + af, max_af)
+            else:
+                # 更新極致點 (EP) 優先
+                new_low = False
+                if low[i] < ep:
+                    ep = low[i]
+                    new_low = True
+
+                current_sar = prev_sar + af_val * (ep - prev_sar)
+                current_sar = max(current_sar, high[i-1], high[max(0, i-2)])
+
+                # 階段 3: 檢查反轉 (盤中最高價突破當天 SAR)
+                if high[i] > current_sar:
+                    uptrend = True
+                    sar[i] = ep # 反轉當日跳至前波段最低點
+                    af_val = af
+                    ep = high[i]
+                else:
+                    sar[i] = current_sar
+                    # 階段 4: 更新 AF (僅在有新低時更新)
+                    if new_low:
+                        af_val = min(af_val + af, max_af)
+        return sar
+
+    df['SAR'] = calculate_sar(df)
+
+    # 5. KD (Stochastic) - 9K, 9D
+    low_9 = df['Low'].rolling(window=9).min()
+    high_9 = df['High'].rolling(window=9).max()
+    rsv = (df['Close'] - low_9) / (high_9 - low_9) * 100
+
+    # 使用指數加權計算平滑後的 K 與 D
+    df['9K'] = rsv.ewm(com=2, adjust=False).mean() # com=2 等於 alpha=1/3
+    df['9D'] = df['9K'].ewm(com=2, adjust=False).mean()
+
+    # 6. MACD - DIF(12-26), MACD(9), OSC
+    ema12 = df['Close'].ewm(span=12, adjust=False).mean()
+    ema26 = df['Close'].ewm(span=26, adjust=False).mean()
+    df['DIF'] = (ema12 - ema26)
+    df['MACD_Signal'] = df['DIF'].ewm(span=9, adjust=False).mean()
+    df['OSC'] = df['DIF'] - df['MACD_Signal']
+
+    # 7. RSI (5, 10)
+    def calculate_rsi(series, period):
+        delta = series.diff()
+        gain = delta.where(delta > 0, 0)
+        loss = -delta.where(delta < 0, 0)
+
+        avg_gain = gain.ewm(alpha=1/period, adjust=False).mean()
+        avg_loss = loss.ewm(alpha=1/period, adjust=False).mean()
+
+        rs = avg_gain / avg_loss
+        return 100 - (100 / (1 + rs))
+
+    df['RSI_5'] = calculate_rsi(df['Close'], 5)
+    df['RSI_10'] = calculate_rsi(df['Close'], 10)
+
+    # 8. DMI (DMP, DMN, ADX) - 14日
+    tr1 = df['High'] - df['Low']
+    tr2 = (df['High'] - df['Close'].shift(1)).abs()
+    tr3 = (df['Low'] - df['Close'].shift(1)).abs()
+    tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+
+    dm_plus = (df['High'].diff()).where((df['High'].diff() > 0) & (df['High'].diff() > df['Low'].shift(1) - df['Low']), 0)
+    dm_minus = (df['Low'].shift(1) - df['Low']).where((df['Low'].shift(1) - df['Low'] > 0) & (df['Low'].shift(1) - df['Low'] > df['High'].diff()), 0)
+
+    atr_14 = tr.ewm(alpha=1/14, adjust=False).mean()
+    df['+DI(14)'] = 100 * (dm_plus.ewm(alpha=1/14, adjust=False).mean() / atr_14)
+    df['-DI(14)'] = 100 * (dm_minus.ewm(alpha=1/14, adjust=False).mean() / atr_14)
+
+    dx = 100 * (df['+DI(14)'] - df['-DI(14)']).abs() / (df['+DI(14)'] + df['-DI(14)'])
+    df['ADX(14)'] = dx.ewm(alpha=1/14, adjust=False).mean()
+
+    # --- 整理輸出欄位 ---
+    # 先將索引 Date 轉回欄位以便整理
+    df.reset_index(inplace=True)
+
+    # 重新命名與選擇欄位
+    output_columns = {
+        'Date': '日期',
+        'Open': '開盤',
+        'High': '最高',
+        'Low': '最低',
+        'Close': '收盤',
+        'Volume': '成交量',
+        '是否結算日': '是否結算日',
+        'MA5': '5MA',
+        'MA10': '10MA',
+        'MA20': '20MA',
+        'MA60': '60MA',
+        'BB_Upper': 'BBAND(22)上軌',
+        'BB_Mid': 'BBAND(22)中軌',
+        'BB_Lower': 'BBAND(22)下軌',
+        'AH': 'AH',
+        'NH': 'NH',
+        'CDP': 'CDP',
+        'NL': 'NL',
+        'AL': 'AL',
+        'SAR': 'SAR',
+        '9K': '9K',
+        '9D': '9D',
+        'DIF': 'DIF(12-26)',
+        'MACD_Signal': 'MACD(9)',
+        'OSC': 'OSC',
+        'RSI_5': 'RSI(5)',
+        'RSI_10': 'RSI(10)',
+        '+DI(14)': '+DI(14)',
+        '-DI(14)': '-DI(14)',
+        'ADX(14)': 'ADX(14)'
+    }
+
+    # 過濾與排序
+    df = df[list(output_columns.keys())]
+    df.rename(columns=output_columns, inplace=True)
+
+    return df
+
+if __name__ == "__main__":
+    import sys
+
+    file_path = 'data.tsv'
+    result_df = analyze_taifex_data(file_path)
+
+    # --- 命令行參數處理 ---
+    # 預設輸出最近 180 個交易日
+    n_days = 180
+    output_all = False
+
+    if len(sys.argv) > 1:
+        arg = sys.argv[1].lower()
+        if arg == 'all':
+            output_all = True
+        else:
+            try:
+                n_days = int(arg)
+                if n_days <= 0:
+                    print("警告：參數應為正整數，將使用預設值 180")
+                    n_days = 180
+            except ValueError:
+                print(f"警告：無效參數 '{sys.argv[1]}'，將使用預設值 180")
+                n_days = 180
+
+    # 執行過濾
+    if output_all:
+        final_df = result_df
+        print(f"分析完成！輸出所有資料 (共 {len(final_df)} 筆)")
+    else:
+        final_df = result_df.tail(n_days)
+        print(f"分析完成！輸出最近 {len(final_df)} 個交易日的資料")
+
+    # 終端顯示最近 5 筆作為預覽
+    print("\n最新 5 筆資料預覽：")
+    print(final_df.tail(5))
+
+    final_df.to_csv('analysis_results.csv', index=False)
+    print("\n完整結果已儲存至 analysis_results.csv")
