@@ -249,5 +249,5 @@ if __name__ == "__main__":
     print("\n最新 5 筆資料預覽：")
     print(final_df.tail(5))
 
-    final_df.to_csv('analysis_results.csv', index=False)
-    print("\n完整結果已儲存至 analysis_results.csv")
+    final_df.to_csv('analysis_results.tsv', sep='\t', index=False)
+    print("\n完整結果已儲存至 analysis_results.tsv")
