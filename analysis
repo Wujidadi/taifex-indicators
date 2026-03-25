@@ -24,7 +24,7 @@ def analyze_taifex_data(file_path):
     # --- 指標計算 (使用原生 Pandas / Numpy，確保 Python 3.14 相容性) ---
 
     # 1. 移動平均線 (Moving Averages, MA)
-    for length in [5, 10, 20, 60]:
+    for length in [5, 10, 20, 60, 120]:
         df[f'MA{length}'] = df['Close'].rolling(window=length).mean()
 
     # 2. 布林通道 (Bollinger Bands, BBAND) - 22日，2倍標準差
@@ -185,6 +185,7 @@ def analyze_taifex_data(file_path):
         'MA10': '10MA',
         'MA20': '20MA',
         'MA60': '60MA',
+        'MA120': '120MA',
         'BB_Upper': 'BBAND(22)上軌',
         'BB_Mid': 'BBAND(22)中軌',
         'BB_Lower': 'BBAND(22)下軌',
