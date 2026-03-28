@@ -1,5 +1,5 @@
-# Created by https://www.toptal.com/developers/gitignore/api/macos,linux,windows,python,visualstudiocode,jetbrains,pycharm
-# Edit at https://www.toptal.com/developers/gitignore?templates=macos,linux,windows,python,visualstudiocode,jetbrains,pycharm
+# Created by https://www.toptal.com/developers/gitignore/api/macos,linux,windows,python,visualstudiocode,jetbrains,pycharm+all
+# Edit at https://www.toptal.com/developers/gitignore?templates=macos,linux,windows,python,visualstudiocode,jetbrains,pycharm+all
 
 ### JetBrains ###
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio, WebStorm and Rider
@@ -162,7 +162,7 @@ Temporary Items
 # iCloud generated files
 *.icloud
 
-### PyCharm ###
+### PyCharm+all ###
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio, WebStorm and Rider
 # Reference: https://intellij-support.jetbrains.com/hc/en-us/articles/206544839
 
@@ -211,31 +211,14 @@ Temporary Items
 
 # Android studio 3.1+ serialized cache file
 
-### PyCharm Patch ###
-# Comment Reason: https://github.com/joeblau/gitignore.io/issues/186#issuecomment-215987721
+### PyCharm+all Patch ###
+# Ignore everything but code style settings and run configurations
+# that are supposed to be shared within teams.
 
-# *.iml
-# modules.xml
-# .idea/misc.xml
-# *.ipr
+.idea/*
 
-# Sonarlint plugin
-# https://plugins.jetbrains.com/plugin/7973-sonarlint
-
-# SonarQube Plugin
-# https://plugins.jetbrains.com/plugin/7238-sonarqube-community-plugin
-
-# Markdown Navigator plugin
-# https://plugins.jetbrains.com/plugin/7896-markdown-navigator-enhanced
-
-# Cache file creation bug
-# See https://youtrack.jetbrains.com/issue/JBR-2257
-
-# CodeStream plugin
-# https://plugins.jetbrains.com/plugin/12206-codestream
-
-# Azure Toolkit for IntelliJ plugin
-# https://plugins.jetbrains.com/plugin/8053-azure-toolkit-for-intellij
+!.idea/codeStyles
+!.idea/runConfigurations
 
 ### Python ###
 # Byte-compiled / optimized / DLL files
@@ -411,11 +394,6 @@ pyrightconfig.json
 
 ### VisualStudioCode ###
 .vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-!.vscode/*.code-snippets
 
 # Local History for Visual Studio Code
 .history/
@@ -454,9 +432,9 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
-# End of https://www.toptal.com/developers/gitignore/api/macos,linux,windows,python,visualstudiocode,jetbrains,pycharm
+# End of https://www.toptal.com/developers/gitignore/api/macos,linux,windows,python,visualstudiocode,jetbrains,pycharm+all
 
-analysis_results.csv
-analysis_results.tsv
-data.tsv
-diff.tsv
+data.[ct]sv
+diff.[ct]sv
+analysis_results.[ct]sv
+example*
