@@ -8,7 +8,7 @@ cp data_template.tsv data.tsv
 
 # 編輯 data.tsv 以變更台指期歷史數據
 
-# 預設輸出最近 180 個交易日的分析結果
+# 預設輸出最近 120 個交易日的分析結果
 python analysis
 
 # 或者輸出所有資料

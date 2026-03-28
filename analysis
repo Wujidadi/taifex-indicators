@@ -220,8 +220,8 @@ if __name__ == "__main__":
     result_df = analyze_taifex_data(file_path)
 
     # --- 命令行參數處理 ---
-    # 預設輸出最近 180 個交易日
-    n_days = 180
+    # 預設輸出最近 120 個交易日
+    n_days = 120
     output_all = False
 
     if len(sys.argv) > 1:
@@ -232,10 +232,10 @@ if __name__ == "__main__":
             try:
                 n_days = int(arg)
                 if n_days <= 0:
-                    print("警告：參數應為正整數，將使用預設值 180")
+                    print("警告：參數應為正整數，將使用預設值 120")
                     n_days = 180
             except ValueError:
-                print(f"警告：無效參數 '{sys.argv[1]}'，將使用預設值 180")
+                print(f"警告：無效參數 '{sys.argv[1]}'，將使用預設值 120")
                 n_days = 180
 
     # 執行過濾
