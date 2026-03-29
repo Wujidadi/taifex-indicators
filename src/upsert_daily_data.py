@@ -33,8 +33,8 @@ def _is_settlement_day(d: date) -> bool:
     return d.weekday() == 2 and 15 <= d.day <= 21
 
 
-def _fetch_ohlcv(target_date: str) -> tuple[int, int, int, int, int]:
-    """呼叫 finmind_mtx_daily_summary.py 取得 OHLCV，解析並回傳。"""
+def _fetch_summary(target_date: str) -> dict[str, str]:
+    """呼叫 finmind_mtx_daily_summary.py，解析所有輸出欄位並回傳。"""
     result = subprocess.run(
         [sys.executable, "src/finmind_mtx_daily_summary.py", target_date],
         capture_output=True,
@@ -48,7 +48,6 @@ def _fetch_ohlcv(target_date: str) -> tuple[int, int, int, int, int]:
         print(f"錯誤：無法取得資料。{('  ' + stderr) if stderr else ''}")
         raise SystemExit(1)
 
-    # 解析 6 行輸出：商品/開盤價/最高價/最低價/收盤價/成交量
     fields: dict[str, str] = {}
     for line in output.splitlines():
         if ":" in line:
@@ -60,17 +59,13 @@ def _fetch_ohlcv(target_date: str) -> tuple[int, int, int, int, int]:
         print(output)
         raise SystemExit(1)
 
-    try:
-        open_price = int(fields["開盤價"])
-        high_price = int(fields["最高價"])
-        low_price  = int(fields["最低價"])
-        close_price = int(fields["收盤價"])
-        volume = int(fields["成交量"])
-    except (KeyError, ValueError) as exc:
-        print(f"錯誤：解析腳本輸出失敗（{exc}）。")
-        raise SystemExit(1)
+    required = ("開盤價", "最高價", "最低價", "收盤價", "成交量")
+    for key in required:
+        if key not in fields:
+            print(f"錯誤：腳本輸出缺少欄位「{key}」。")
+            raise SystemExit(1)
 
-    return open_price, high_price, low_price, close_price, volume
+    return fields
 
 
 def _build_tsv_line(
@@ -102,21 +97,19 @@ def _update_data_tsv(target_date: str, new_line: str) -> None:
         return
 
     header_line = raw_lines[0]
-    data_lines = raw_lines[1:]  # 不含標題列的資料行
+    data_lines = raw_lines[1:]
 
     updated = False
     for idx, line in enumerate(data_lines):
         parts = line.split("\t")
         if not parts:
             continue
-        existing_date = parts[0]
-        if existing_date == target_date:
+        if parts[0] == target_date:
             data_lines[idx] = new_line
             updated = True
             break
 
     if not updated:
-        # 找出正確插入位置以維持日期遞增順序
         insert_pos = len(data_lines)
         for idx, line in enumerate(data_lines):
             parts = line.split("\t")
@@ -132,6 +125,43 @@ def _update_data_tsv(target_date: str, new_line: str) -> None:
     print(f"已{action} {target_date} 的資料至 {DATA_TSV}。")
 
 
+def _update_settlement_flag(prev_date: str) -> None:
+    """將 data.tsv 中指定日期的「是否結算日」欄位更新為 TRUE。"""
+    if not DATA_TSV.exists():
+        print(f"警告：找不到 {DATA_TSV}，無法更新 {prev_date} 的結算日標記。")
+        return
+
+    with DATA_TSV.open("r", encoding="utf-8", newline="") as fh:
+        raw_lines = fh.read().splitlines(keepends=False)
+
+    if not raw_lines:
+        return
+
+    header_line = raw_lines[0]
+    data_lines = raw_lines[1:]
+
+    found = False
+    changed = False
+    for idx, line in enumerate(data_lines):
+        parts = line.split("\t")
+        if parts and parts[0] == prev_date:
+            found = True
+            if len(parts) >= 7 and parts[6] != "TRUE":
+                parts[6] = "TRUE"
+                data_lines[idx] = "\t".join(parts)
+                changed = True
+            break
+
+    if not found:
+        print(f"警告：data.tsv 中找不到 {prev_date} 的資料，無法更新結算日標記。")
+        return
+
+    if changed:
+        new_content = "\n".join([header_line] + data_lines) + "\n"
+        DATA_TSV.write_text(new_content, encoding="utf-8")
+        print(f"已更新 {prev_date} 的「是否結算日」為 TRUE。")
+
+
 def main() -> int:
     arg_date = sys.argv[1] if len(sys.argv) > 1 else None
     target_date = _resolve_target_date(arg_date)
@@ -139,7 +169,17 @@ def main() -> int:
     d = date.fromisoformat(target_date)
     settlement = _is_settlement_day(d)
 
-    open_price, high_price, low_price, close_price, volume = _fetch_ohlcv(target_date)
+    summary = _fetch_summary(target_date)
+
+    try:
+        open_price  = int(summary["開盤價"])
+        high_price  = int(summary["最高價"])
+        low_price   = int(summary["最低價"])
+        close_price = int(summary["收盤價"])
+        volume      = int(summary["成交量"])
+    except (KeyError, ValueError) as exc:
+        print(f"錯誤：解析腳本輸出失敗（{exc}）。")
+        return 1
 
     new_line = _build_tsv_line(
         target_date, open_price, high_price, low_price, close_price, volume, settlement
@@ -147,6 +187,12 @@ def main() -> int:
 
     print(f"資料：{new_line}")
     _update_data_tsv(target_date, new_line)
+
+    # 若指定日期為星期四，且腳本偵測到前一交易日為結算日，則補更新 data.tsv 中前一天的結算標記
+    prev_date = summary.get("前日")
+    if prev_date and summary.get("前日結算日") == "TRUE":
+        _update_settlement_flag(prev_date)
+
     return 0
 
 
