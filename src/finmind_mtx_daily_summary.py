@@ -125,28 +125,38 @@ def _calculate_summary(data: list[dict], target_date: str) -> tuple[str, int, in
         and item.get("trading_session") == "position"
     ]
 
-    if len(after_market_rows) != 1 or len(position_rows) != 1:
-        print("錯誤：資料不完整，無法同時取得夜盤與日盤各一筆。")
+    has_after_market = len(after_market_rows) == 1
+    has_position = len(position_rows) == 1
+
+    if not has_after_market:
+        print("錯誤：資料不完整，無法取得夜盤資料。")
         raise SystemExit(0)
 
     after_market = after_market_rows[0]
-    position = position_rows[0]
 
-    open_price = _to_int_price(after_market["open"])
-    max_price = _to_int_price(max(after_market["max"], position["max"]))
-    min_price = _to_int_price(min(after_market["min"], position["min"]))
-
-    # 收盤價：優先使用非零的 settlement_price（日結算價），position 優先於 after_market
-    settlement_pos = _to_int_price(position.get("settlement_price", 0))
-    settlement_am  = _to_int_price(after_market.get("settlement_price", 0))
-    if settlement_pos != 0:
-        close_price = settlement_pos
-    elif settlement_am != 0:
-        close_price = settlement_am
+    if has_position:
+        position = position_rows[0]
+        open_price = _to_int_price(after_market["open"])
+        max_price = _to_int_price(max(after_market["max"], position["max"]))
+        min_price = _to_int_price(min(after_market["min"], position["min"]))
+        # 收盤價：優先使用非零的 settlement_price（日結算價），position 優先於 after_market
+        settlement_pos = _to_int_price(position.get("settlement_price", 0))
+        settlement_am  = _to_int_price(after_market.get("settlement_price", 0))
+        if settlement_pos != 0:
+            close_price = settlement_pos
+        elif settlement_am != 0:
+            close_price = settlement_am
+        else:
+            close_price = _to_int_price(position["close"])
+        volume = int(after_market["volume"] + position["volume"])
     else:
-        close_price = _to_int_price(position["close"])
-
-    volume = int(after_market["volume"] + position["volume"])
+        # 僅有夜盤：整盤尚未結束，直接使用夜盤 OHLCV
+        open_price  = _to_int_price(after_market["open"])
+        max_price   = _to_int_price(after_market["max"])
+        min_price   = _to_int_price(after_market["min"])
+        settlement_am = _to_int_price(after_market.get("settlement_price", 0))
+        close_price = settlement_am if settlement_am != 0 else _to_int_price(after_market["close"])
+        volume = int(after_market["volume"])
 
     return contract_date, open_price, max_price, min_price, close_price, volume
 
@@ -155,6 +165,9 @@ def main() -> int:
     arg_date = sys.argv[1] if len(sys.argv) > 1 else None
     target_date = _resolve_target_date(arg_date)
 
+    arg_check_prev = sys.argv[2].strip().lower() if len(sys.argv) > 2 else ""
+    check_prev = arg_check_prev in ("true", "yes")
+
     token = _load_finmind_token()
     if not token:
         print("錯誤：找不到 FINMIND_API_TOKEN，請先在 .env 設定。")
@@ -162,13 +175,14 @@ def main() -> int:
 
     target_dt = datetime.strptime(target_date, "%Y-%m-%d")
     is_thursday = target_dt.weekday() == 3  # 0=Monday … 3=Thursday
+    fetch_prev = is_thursday or check_prev
 
     prev_date: str | None = None
     prev_was_settlement: bool | None = None
     all_data: list[dict] = []
 
-    if is_thursday:
-        # 指定日期為星期四：嘗試將 start_date 往前延伸至最近的交易日，
+    if fetch_prev:
+        # 嘗試將 start_date 往前延伸至最近的交易日，
         # 使當日與前一交易日的資料可在同一次 API 請求中取得
         prev_dt = target_dt - timedelta(days=1)
         for _ in range(14):

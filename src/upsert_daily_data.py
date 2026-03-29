@@ -33,10 +33,13 @@ def _is_settlement_day(d: date) -> bool:
     return d.weekday() == 2 and 15 <= d.day <= 21
 
 
-def _fetch_summary(target_date: str) -> dict[str, str]:
+def _fetch_summary(target_date: str, check_prev: bool = False) -> dict[str, str]:
     """呼叫 finmind_mtx_daily_summary.py，解析所有輸出欄位並回傳。"""
+    cmd = [sys.executable, "src/finmind_mtx_daily_summary.py", target_date]
+    if check_prev:
+        cmd.append("yes")
     result = subprocess.run(
-        [sys.executable, "src/finmind_mtx_daily_summary.py", target_date],
+        cmd,
         capture_output=True,
         text=True,
         encoding="utf-8",
@@ -166,10 +169,13 @@ def main() -> int:
     arg_date = sys.argv[1] if len(sys.argv) > 1 else None
     target_date = _resolve_target_date(arg_date)
 
+    arg_check_prev = sys.argv[2].strip().lower() if len(sys.argv) > 2 else ""
+    check_prev = arg_check_prev in ("true", "yes")
+
     d = date.fromisoformat(target_date)
     settlement = _is_settlement_day(d)
 
-    summary = _fetch_summary(target_date)
+    summary = _fetch_summary(target_date, check_prev)
 
     try:
         open_price  = int(summary["開盤價"])
@@ -188,7 +194,7 @@ def main() -> int:
     print(f"資料：{new_line}")
     _update_data_tsv(target_date, new_line)
 
-    # 若指定日期為星期四，且腳本偵測到前一交易日為結算日，則補更新 data.tsv 中前一天的結算標記
+    # 若腳本偵測到前一交易日為結算日，則補更新 data.tsv 中前一天的結算標記
     prev_date = summary.get("前日")
     if prev_date and summary.get("前日結算日") == "TRUE":
         _update_settlement_flag(prev_date)

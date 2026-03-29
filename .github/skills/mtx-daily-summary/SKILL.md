@@ -16,6 +16,7 @@ user-invocable: true
 
 <input>
 - `date`（可選）：格式為 `YYYY-MM-DD`。
+- `check_prev`（可選）：傳入 `true` 或 `yes`（不分大小寫）時，即使指定日期不是星期四，也強制抓取前一交易日資料以判斷前一天是否為結算日。
 - 未提供 `date` 時，必須以 `Asia/Taipei` 的目前日期作為查詢日期。
 </input>
 
@@ -32,12 +33,15 @@ user-invocable: true
 - `FINMIND_API_TOKEN` 必須由工作區 `.env` 讀取，不可硬編碼，不可輸出到回覆內容。
 - 不可在輸出中洩漏原始 token 或完整原始 JSON。
 - 收盤價取自非零的 `settlement_price`（日結算價），`position` 優先，其次 `after_market`；兩者均為 0 則使用 `position.close`。
+- 若能取得 `after_market` 但無 `position`（整盤尚未結束），直接以 `after_market` 的 OHLCV 作為當日資料輸出，不視為錯誤。
+- 若連 `after_market` 都無法取得，則輸出錯誤訊息。
 </rules>
 
 <process>
 1. 直接呼叫專案內可複用腳本：
    - 有帶 `date` 參數時：`python src/finmind_mtx_daily_summary.py <date>`
    - 未帶 `date` 參數時：`python src/finmind_mtx_daily_summary.py`
+   - 額外強制抓取前一交易日時：`python src/finmind_mtx_daily_summary.py <date> yes`
 
 2. 腳本會自行完成以下流程：
    - 驗證 `date` 格式（`YYYY-MM-DD`）或套用 `Asia/Taipei` 當日日期。
@@ -58,6 +62,7 @@ user-invocable: true
 
 1. `python src/finmind_mtx_daily_summary.py`
 2. `python src/finmind_mtx_daily_summary.py 2026-03-27`
+3. `python src/finmind_mtx_daily_summary.py 2026-03-27 yes`  ← 強制抓前一交易日
 
 注意事項：
 

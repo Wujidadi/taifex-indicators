@@ -14,6 +14,7 @@ user-invocable: true
 
 <input>
 - `date`（可選）：格式為 `YYYY-MM-DD`。
+- `check_prev`（可選）：傳入 `true` 或 `yes`（不分大小寫）時，即使指定日期不是星期四，也強制抓取前一交易日資料以判斷前一天是否為結算日，並可能回補更新 `data.tsv`。
 - 未提供時，以 `Asia/Taipei` 的當日日期作為查詢日期。
 </input>
 
@@ -25,12 +26,14 @@ user-invocable: true
 - `是否結算日` 欄位使用字串 `TRUE` 或 `FALSE`（全大寫）。
 - 不可更動 `data.tsv` 的標題列。
 - OHLCV 資料透過呼叫 `src/finmind_mtx_daily_summary.py` 腳本取得，不在此 skill 內直接呼叫 FinMind API。
+- 若腳本僅能取得夜盤（整盤尚未結束），仍以夜盤資料寫入 `data.tsv`，待日盤資料就緒後再執行一次即可更新。
 </rules>
 
 <process>
 1. 直接呼叫專案內可複用腳本：
    - 有帶 `date` 參數時：`python src/upsert_daily_data.py <date>`
    - 未帶 `date` 參數時：`python src/upsert_daily_data.py`
+   - 額外強制抓取前一交易日時：`python src/upsert_daily_data.py <date> yes`
 
 2. 腳本會自行完成以下流程：
    - 驗證 `date` 格式（`YYYY-MM-DD`）或套用 `Asia/Taipei` 當日日期。
@@ -50,6 +53,7 @@ user-invocable: true
 
 1. `python src/upsert_daily_data.py`
 2. `python src/upsert_daily_data.py 2026-03-27`
+3. `python src/upsert_daily_data.py 2026-03-27 yes`  ← 強制抓前一交易日
 
 注意事項：
 
