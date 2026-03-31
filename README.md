@@ -4,9 +4,14 @@
 
 ```bash
 # 複製範例資料
-cp data_template.tsv data.tsv
+cp data.example.tsv data.tsv
 
 # 編輯 data.tsv 以變更台指期歷史數據
+
+# 複製環境設定
+cp .env.example .env
+
+# 編輯環境設定
 
 # 預設輸出最近 120 個交易日的分析結果
 python analysis
