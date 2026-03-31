@@ -438,3 +438,5 @@ data.[ct]sv
 diff.[ct]sv
 analysis_results.[ct]sv
 example*
+
+/.claude/settings.local.json
