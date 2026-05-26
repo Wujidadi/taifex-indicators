@@ -22,6 +22,12 @@ python analysis 90
 
 專案未提供 `requirements.txt`，相依套件為 `pandas` 與 `numpy`。程式碼刻意避免使用第三方技術分析函式庫，以維持 **Python 3.14 相容性**。
 
+## 環境設定
+
+> ⚠️ **重要**：本機使用 Homebrew 安裝的 Python 3（`/opt/homebrew/bin/python3`），需確保 pandas 和 numpy 已安裝。
+>
+> 執行 `python analysis` 時，請確認使用的 Python 版本有 pandas 和 numpy。若出現 `ModuleNotFoundError: No module named 'pandas'`，表示正在使用系統預設 Python（`/usr/bin/python3`），應改用 `/opt/homebrew/bin/python3 analysis` 或透過 alias 設定指向 Homebrew 版本。
+
 ## 架構
 
 | 檔案                   | 用途                                                                      |
