@@ -1,7 +1,8 @@
-#!/usr/bin/env python3
+"""台指期技術指標計算邏輯，為各分析腳本（如 analyze_futures.py）匯入的單一來源"""
 
 import pandas as pd
 import numpy as np
+
 
 def analyze_taifex_data(file_path):
     # 讀取 TSV 檔案
@@ -212,43 +213,3 @@ def analyze_taifex_data(file_path):
     df.rename(columns=output_columns, inplace=True)
 
     return df
-
-if __name__ == "__main__":
-    import sys
-
-    file_path = 'data.tsv'
-    result_df = analyze_taifex_data(file_path)
-
-    # --- 命令行參數處理 ---
-    # 預設輸出最近 120 個交易日
-    n_days = 120
-    output_all = False
-
-    if len(sys.argv) > 1:
-        arg = sys.argv[1].lower()
-        if arg == 'all':
-            output_all = True
-        else:
-            try:
-                n_days = int(arg)
-                if n_days <= 0:
-                    print("警告：參數應為正整數，將使用預設值 120")
-                    n_days = 180
-            except ValueError:
-                print(f"警告：無效參數 '{sys.argv[1]}'，將使用預設值 120")
-                n_days = 180
-
-    # 執行過濾
-    if output_all:
-        final_df = result_df
-        print(f"分析完成！輸出所有資料 (共 {len(final_df)} 筆)")
-    else:
-        final_df = result_df.tail(n_days)
-        print(f"分析完成！輸出最近 {len(final_df)} 個交易日的資料")
-
-    # 終端顯示最近 5 筆作為預覽
-    print("\n最新 5 筆資料預覽：")
-    print(final_df.tail(5))
-
-    final_df.to_csv('analysis_results.tsv', sep='\t', index=False)
-    print("\n完整結果已儲存至 analysis_results.tsv")
