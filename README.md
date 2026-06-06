@@ -17,4 +17,14 @@ python3 src/analyze_futures.py all        # MTX、全部資料
 python3 src/analyze_futures.py 90         # MTX、最近 90 日
 ```
 
-> 於 Claude Code 中亦可直接呼叫 `/update-analysis-report` 技能，一次完成抓取與分析。
+> 於 Claude Code 中亦可直接呼叫 `/update-analysis` 技能，一次完成抓取與分析。
+
+## 補充分析
+
+```bash
+# 歷史急殺後報酬與回補時程回測（讀 data/<id>.tsv，輸出統計至終端）
+python3 src/crash_recovery_backtest.py            # 預設 MTX、多門檻
+python3 src/crash_recovery_backtest.py tx -6      # 指定商品與單日跌幅門檻
+```
+
+> 專題分析報告（非制式報表）置於 `reports/analysis/`。

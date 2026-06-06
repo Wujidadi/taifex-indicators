@@ -1,5 +1,5 @@
 ---
-name: update-analysis-report
+name: update-analysis
 description: 抓取指定期貨商品在日期區間的每日資料寫入 data/<id>.tsv，再產生最近 N 日技術指標分析至 reports/<id>.tsv
 argument-hint: "<data_id: 可選，預設 MTX> <start_date: YYYY-MM-DD，可選，預設台灣當日> <end_date: 可選，預設同起日> <days: 可選，預設 120；傳入 all 則輸出全部>"
 user-invocable: true
