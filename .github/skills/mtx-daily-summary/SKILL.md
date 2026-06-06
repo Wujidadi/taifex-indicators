@@ -62,7 +62,7 @@ user-invocable: true
 
 1. `python src/finmind_mtx_daily_summary.py`
 2. `python src/finmind_mtx_daily_summary.py 2026-03-27`
-3. `python src/finmind_mtx_daily_summary.py 2026-03-27 yes`  ← 強制抓前一交易日
+3. `python src/finmind_mtx_daily_summary.py 2026-03-27 yes` ← 強制抓前一交易日
 
 注意事項：
 

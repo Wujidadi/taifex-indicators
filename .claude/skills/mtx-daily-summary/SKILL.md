@@ -53,7 +53,7 @@ user-invocable: true
    - 若發生錯誤，輸出對應錯誤訊息。
 
 3. 將腳本 stdout 原樣回傳給使用者，不額外加工。
-</process>
+   </process>
 
 <implementation_hint>
 腳本位置：`src/finmind_mtx_daily_summary.py`
@@ -62,7 +62,7 @@ user-invocable: true
 
 1. `python src/finmind_mtx_daily_summary.py`
 2. `python src/finmind_mtx_daily_summary.py 2026-03-27`
-3. `python src/finmind_mtx_daily_summary.py 2026-03-27 yes`  ← 強制抓前一交易日
+3. `python src/finmind_mtx_daily_summary.py 2026-03-27 yes` ← 強制抓前一交易日
 
 注意事項：
 
@@ -73,4 +73,4 @@ user-invocable: true
   前日: YYYY-MM-DD
   前日結算日: TRUE|FALSE
   ```
-</implementation_hint>
+  </implementation_hint>

@@ -44,7 +44,7 @@ user-invocable: true
    - 輸出操作結果（新增 / 更新 / 結算標記更新）。
 
 3. 將腳本 stdout 原樣回傳給使用者，不額外加工。
-</process>
+   </process>
 
 <implementation_hint>
 腳本位置：`src/upsert_daily_data.py`
@@ -53,11 +53,11 @@ user-invocable: true
 
 1. `python src/upsert_daily_data.py`
 2. `python src/upsert_daily_data.py 2026-03-27`
-3. `python src/upsert_daily_data.py 2026-03-27 yes`  ← 強制抓前一交易日
+3. `python src/upsert_daily_data.py 2026-03-27 yes` ← 強制抓前一交易日
 
 注意事項：
 
 - 腳本內部透過 `subprocess` 呼叫 `src/finmind_mtx_daily_summary.py`，需在專案根目錄執行。
 - `data.tsv` 不存在時，腳本會自動建立並寫入標題列與第一筆資料。
 - 若 `src/finmind_mtx_daily_summary.py` 回傳錯誤（例如非交易日、API 失敗），腳本會原樣印出錯誤並以非零碼退出，不修改 `data.tsv`。
-</implementation_hint>
+  </implementation_hint>

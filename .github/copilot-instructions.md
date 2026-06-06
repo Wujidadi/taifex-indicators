@@ -27,7 +27,7 @@ python analysis 90
 | 檔案                   | 用途                                                                      |
 | ---------------------- | ------------------------------------------------------------------------- |
 | `analysis`             | 單一進入點（無 `.py` 副檔名）；包含所有指標計算邏輯及命令列參數處理       |
-| `data.tsv`             | 輸入資料——已列入 `.gitignore`，須以複製 `data.example.tsv` 的方式建立     |
+| `data.tsv`             | 輸入資料——已列入 `.gitignore`，須以複製 `data.example.tsv` 的方式建立   |
 | `data.example.tsv`     | 輸入範本：TSV 格式，包含欄位 `日期 開盤 最高 最低 收盤 成交量 是否結算日` |
 | `analysis_results.tsv` | 輸出結果：寬表格式 TSV，所有指標欄位均使用繁體中文命名                    |
 | `.env`                 | 存放 `FINMIND_API_TOKEN`，供選用的資料抓取功能使用                        |

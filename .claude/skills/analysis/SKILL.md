@@ -22,7 +22,7 @@ user-invocable: true
    - 未帶 `days` 參數時：`python3 analysis`
 
 2. 將腳本 stdout 原樣回傳給使用者，不額外加工。
-</process>
+   </process>
 
 <implementation_hint>
 腳本位置：專案根目錄的 `analysis`（無副檔名）
@@ -37,4 +37,4 @@ user-invocable: true
 
 - 須在專案根目錄執行。
 - 輸入資料來源為 `data.tsv`，輸出結果寫入 `analysis_results.tsv`。
-</implementation_hint>
+  </implementation_hint>
