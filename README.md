@@ -3,22 +3,18 @@
 ## Quick Start
 
 ```bash
-# 複製範例資料
-cp data.example.tsv data.tsv
-
-# 編輯 data.tsv 以變更台指期歷史數據
-
-# 複製環境設定
+# 複製環境設定，並填入 FINMIND_API_TOKEN
 cp .env.example .env
 
-# 編輯環境設定
+# 1. 抓取資料：查詢指定商品（預設 MTX）並寫入 data/<id>.tsv
+python3 src/finmind_futures_daily.py                         # 預設 MTX、台灣當日
+python3 src/finmind_futures_daily.py 2026-06-01 2026-06-05   # 指定區間
+python3 src/finmind_futures_daily.py TX 2026-06-03           # 指定商品、單日
 
-# 預設輸出最近 120 個交易日的分析結果
-python analysis
-
-# 或者輸出所有資料
-python analysis all
-
-# 或者指定輸出最近 N 個交易日的資料，例如最近 90 天
-python analysis 90
+# 2. 產生報表：讀 data/<id>.tsv，輸出最近 N 日至 reports/<id>.tsv
+python3 src/analyze_futures.py            # 預設 MTX、最近 120 日
+python3 src/analyze_futures.py all        # MTX、全部資料
+python3 src/analyze_futures.py 90         # MTX、最近 90 日
 ```
+
+> 於 Claude Code 中亦可直接呼叫 `/update-analysis-report` 技能，一次完成抓取與分析。
