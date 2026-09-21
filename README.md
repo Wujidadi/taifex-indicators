@@ -19,6 +19,24 @@ python3 src/analyze_futures.py 90         # MTX、最近 90 日
 
 > 於 Claude Code 中亦可直接呼叫 `/update-analysis` 技能，一次完成抓取與分析。
 
+## 排程（macOS）
+
+`launchd/com.wujidadi.taifex.daily-update.plist` 於星期一至五 16:40（系統時區）執行 `src/daily_update.py`，將 TX、MTX、TMF 的資料補抓至台灣當日並重新產生報表，日誌寫入 `~/Library/Logs/taifex/daily-update.log`。
+FinMind `TaiwanFuturesDaily` 於星期一至五 16:30 更新，排程時間依此保留 10 分鐘緩衝。
+
+```bash
+# 安裝或更新排程
+mkdir -p ~/Library/Logs/taifex
+cp launchd/com.wujidadi.taifex.daily-update.plist ~/Library/LaunchAgents/
+launchctl bootout gui/$(id -u)/com.wujidadi.taifex.daily-update 2>/dev/null
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.wujidadi.taifex.daily-update.plist
+
+# 立即試跑一次
+launchctl kickstart gui/$(id -u)/com.wujidadi.taifex.daily-update
+```
+
+排程入口須為 Homebrew 的 Python：launchd 下的 `/bin/zsh` 無「文件」檔案夾的取用權限，無法開啟專案內的腳本。
+
 ## 補充分析
 
 ```bash

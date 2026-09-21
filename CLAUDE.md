@@ -36,6 +36,8 @@ python3 src/analyze_futures.py TX all                        # TX、全部資料
 | `src/analyze_futures.py`         | 讀取 `data/<id>.tsv` 計算技術指標，輸出最近 N 日結果至 `reports/<id>.tsv`（匯入 `src/analysis.py` 的計算函式，維持單一來源） |
 | `src/analysis.py`                | 技術指標計算邏輯（`analyze_taifex_data`）；供 `analyze_futures.py` 匯入的單一來源                                            |
 | `src/crash_recovery_backtest.py` | 歷史急殺後報酬與回補時程回測（讀 `data/<id>.tsv`，輸出統計至終端）；輔助分析工具，非主流程                                   |
+| `src/daily_update.py`            | 每日排程入口：將 TX／MTX／TMF 的 `data/<id>.tsv` 自最後一列日期補抓至台灣當日，並重新產生 `reports/<id>.tsv`                 |
+| `launchd/`                       | macOS launchd 排程設定留底；`com.wujidadi.taifex.daily-update.plist` 於星期一至五 16:40 執行 `src/daily_update.py`           |
 | `data/<id>.tsv`                  | 各商品原始 OHLCV 資料，`<id>` 為商品代碼小寫（如 `data/tx.tsv`、`data/mtx.tsv`、`data/tmf.tsv`）                             |
 | `reports/<id>.tsv`               | 各商品分析報表，寬表格式 TSV，所有指標欄位均使用繁體中文命名                                                                 |
 | `reports/analysis/`              | 專題分析報告與輔助腳本輸出（如夜盤雪崩分析），與 `reports/<id>.tsv` 制式報表區隔；可持續追加                                 |
